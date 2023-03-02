@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Test.Plutip.Internal.LocalCluster (
   startCluster,
   stopCluster,
@@ -129,13 +130,18 @@ withPlutusInterface conf action = do
   -- current setup requires `cardano-node` and `cardano-cli` as external processes
   checkProcessesAvailable ["cardano-node", "cardano-cli"]
 
-  withLocalClusterSetup conf $ \dir clusterLogs _walletLogs nodeConfigLogHdl -> do
+  withLocalClusterSetup conf $ \dir clusterLogs _walletLogs _nodeConfigLogHdl -> do
     result <- withLoggingNamed "cluster" clusterLogs $ \(_, (_, trCluster)) -> do
       let tr' = contramap MsgCluster $ trMessageText trCluster
       clusterCfg <- localClusterConfigWithExtraConf (extraConfig conf)
-      withRedirectedStdoutHdl nodeConfigLogHdl $ \restoreStdout ->
-        withCluster tr' dir clusterCfg mempty $ \rn -> do
-          restoreStdout $ runActionWthSetup rn dir trCluster action
+
+      -- withRedirectedStdoutHdl nodeConfigLogHdl $ \restoreStdout ->
+      --   withCluster tr' dir clusterCfg mempty $ \rn -> do
+      --     restoreStdout $ runActionWthSetup rn dir trCluster action
+
+      withCluster tr' dir clusterCfg mempty $ \rn -> do
+        runActionWthSetup rn dir trCluster action
+
     handleLogs dir conf
     return result
   where
@@ -157,16 +163,16 @@ withPlutusInterface conf action = do
       userActon cEnv -- executing user action on cluster
 
 -- Redirect stdout to a provided handle providing mask to temporarily revert back to initial stdout.
-withRedirectedStdoutHdl :: Handle -> ((forall b. IO b -> IO b) -> IO a) -> IO a
-withRedirectedStdoutHdl hdl action = do
-  old_stdout <- hDuplicate stdout
-  swapStdout hdl (action $ swapStdout old_stdout)
-  where
-    swapStdout tmphdl io = do
-      hFlush stdout
-      old <- hDuplicate stdout
-      hDuplicateTo tmphdl stdout
-      io `finally` hDuplicateTo old stdout
+-- withRedirectedStdoutHdl :: Handle -> ((forall b. IO b -> IO b) -> IO a) -> IO a
+-- withRedirectedStdoutHdl hdl action = do
+--   old_stdout <- hDuplicate stdout
+--   swapStdout hdl (action $ swapStdout old_stdout)
+--   where
+--     swapStdout tmphdl io = do
+--       hFlush stdout
+--       old <- hDuplicate stdout
+--       hDuplicateTo tmphdl stdout
+--       io `finally` hDuplicateTo old stdout
 
 withDirectory ::
   forall (m :: Type -> Type) (a :: Type).

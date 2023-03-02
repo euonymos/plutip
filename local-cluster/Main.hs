@@ -46,6 +46,7 @@ import Test.Plutip.Internal.LocalCluster (
  )
 import Test.Plutip.Internal.Types (nodeSocket)
 import Test.Plutip.Tools.CardanoApi (awaitAddressFunded)
+import System.IO
 
 main :: IO ()
 main = do
@@ -58,6 +59,8 @@ main = do
 
           extraConf = ExtraConfig slotLength epochSize
           plutipConfig = def {clusterWorkingDir = workingDir, extraConfig = extraConf, chainIndexMode = cIndexMode}
+
+      hSetBuffering stdout NoBuffering
 
       putStrLn "Starting cluster..."
       (st, _) <- startCluster plutipConfig $ do
